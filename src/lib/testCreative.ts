@@ -69,7 +69,7 @@ export function generatePrebidReviewCreative(
   <div class="badge">MonetiseUp Demand</div>
   <div class="title">Prebid.js Certified Ad</div>
   <div class="desc">${width}x${height} Banner | CPM: $${cpm.toFixed(2)}</div>
-  <div class="meta">Placement: ${item.placementId} | Org: 1687 (Adagio Powered)</div>
+  <div class="meta">Placement: ${item.placementId} | MonetiseUp Demand Network</div>
 </body>
 </html>
   `.trim();
