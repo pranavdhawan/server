@@ -1,31 +1,17 @@
 import { PrebidBidRequestBody, MonetiseUpBidResult } from './types';
 import { serverConfig } from './config';
 import { demandPartners, queryPartnerDemand } from './partners';
-import { generatePrebidReviewCreative } from './testCreative';
 
 /**
  * MonetiseUp Multi-Partner Auction Engine
- * - For Prebid test placement IDs (test-placement-123): Guaranteed test ad for PR certification.
- * - For live placements: Dispatches requests to all enabled demand partners in parallel (Adagio, Pubmatic, etc.),
- *   picks the highest CPM winner, and applies MonetiseUp take-rate margin.
+ * Dispatches requests to all enabled demand partners in parallel (Adagio, Pubmatic, etc.),
+ * picks the highest CPM winner, and applies MonetiseUp take-rate margin.
  */
 export async function executeAuction(
   requestBody: PrebidBidRequestBody
 ): Promise<MonetiseUpBidResult[]> {
   const winningBids: MonetiseUpBidResult[] = [];
-  const liveBidsToQuery: typeof requestBody.bids = [];
-
-  // Check each ad unit in the request
-  for (const bidItem of requestBody.bids) {
-    const pId = (bidItem.placementId || '').toLowerCase();
-
-    // If it's a test placement (used by Prebid PR reviewers & local testing)
-    if (pId.startsWith('test') || pId === '12345') {
-      winningBids.push(generatePrebidReviewCreative(bidItem, 1.75));
-    } else {
-      liveBidsToQuery.push(bidItem);
-    }
-  }
+  const liveBidsToQuery: typeof requestBody.bids = requestBody.bids || [];
 
   // If there are live production ad units, query all active partners in parallel
   if (liveBidsToQuery.length > 0) {
