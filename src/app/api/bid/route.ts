@@ -2,22 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import { executeAuction } from '@/lib/auction';
 import { PrebidBidRequestBody } from '@/lib/types';
 
-// Standard CORS headers allowing any publisher website to call this bidding endpoint
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Accept, X-Requested-With',
-  'Access-Control-Max-Age': '86400'
-};
+// Helper to construct CORS headers supporting withCredentials: true
+function getCorsHeaders(request: NextRequest) {
+  const origin = request.headers.get('origin') || '*';
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Accept, X-Requested-With',
+    'Access-Control-Max-Age': '86400'
+  };
+}
 
-export async function OPTIONS() {
+export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
     status: 204,
-    headers: corsHeaders
+    headers: getCorsHeaders(request)
   });
 }
 
 export async function POST(request: NextRequest) {
+  const corsHeaders = getCorsHeaders(request);
   try {
     let body: PrebidBidRequestBody;
 
