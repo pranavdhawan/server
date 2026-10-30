@@ -180,6 +180,14 @@ export async function queryPartnerDemand(
         placement: bidItem.placementId,
         ...(bidItem.params || {})
       },
+      ortb2Imp: {
+        ext: {
+          data: {
+            divId: bidItem.placementId,
+            placement: bidItem.placementId
+          }
+        }
+      },
       mediaTypes: {
         banner: {
           sizes: bidItem.sizes && bidItem.sizes.length > 0 ? bidItem.sizes : [[300, 250]]
@@ -251,7 +259,8 @@ export async function queryPartnerDemand(
       }
 
       const data = await response.json();
-      const rawBids = data.bids || data.seatbid?.[0]?.bid || [];
+      console.log(`[Adagio Upstream] Response payload keys: [${Object.keys(data || {}).join(', ')}]`);
+      const rawBids = data.bids || data.data?.bids || data.seatbid?.[0]?.bid || [];
       console.log(`[Adagio Upstream] Received ${rawBids.length} raw bid(s) from Adagio.`);
 
       if (!Array.isArray(rawBids) || rawBids.length === 0) return [];
