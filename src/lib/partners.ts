@@ -192,7 +192,7 @@ export async function queryPartnerDemand(
         },
         features: {
           print_number: '1',
-          adunit_position: 1
+          adunit_position: '1'
         },
         mediaTypes: {
           banner: {
@@ -241,7 +241,6 @@ export async function queryPartnerDemand(
         eids: (requestBody as any).user?.eids || (requestBody as any).eids || []
       },
       schain: (requestBody as any).source?.ext?.schain || (requestBody as any).schain || undefined,
-      prebidVersion: '9.0.0',
       usIfr: true
     };
 
