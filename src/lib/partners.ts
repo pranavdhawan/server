@@ -170,33 +170,42 @@ export async function queryPartnerDemand(
     const sitePage = requestBody.page || `https://${siteDomain}/`;
     const endpointWithQuery = `${partner.endpointUrl}?orgid=${encodeURIComponent(orgId)}&site=${encodeURIComponent(adagioSiteKey)}`;
 
-    const adUnits = requestBody.bids.map((bidItem) => ({
-      adUnitCode: bidItem.placementId,
-      bidId: bidItem.bidId,
-      bidder: 'adagio',
-      params: {
-        organizationId: orgId,
-        site: adagioSiteKey,
-        placement: bidItem.placementId,
-        ...(bidItem.params || {})
-      },
-      ortb2Imp: {
-        ext: {
-          data: {
-            divId: bidItem.placementId,
-            placement: bidItem.placementId
+    const adUnits = requestBody.bids.map((bidItem) => {
+      const sizes = bidItem.sizes && bidItem.sizes.length > 0 ? bidItem.sizes : [[300, 250]];
+      const placement = bidItem.params?.placement || bidItem.placementId;
+      const elementId = bidItem.params?.adUnitElementId || bidItem.placementId;
+      const bannerSizes = sizes.map((s: number[]) => ({ size: s, floor: null }));
+
+      return {
+        adUnitCode: bidItem.placementId,
+        auctionId: (requestBody as any).auctionId || `auc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        bidder: 'adagio',
+        bidId: bidItem.bidId,
+        params: {
+          organizationId: orgId,
+          site: adagioSiteKey,
+          placement: placement,
+          adUnitElementId: elementId,
+          pagetype: bidItem.params?.pagetype || 'article',
+          category: bidItem.params?.category || 'general',
+          ...(bidItem.params || {})
+        },
+        features: {
+          print_number: '1',
+          adunit_position: 1
+        },
+        mediaTypes: {
+          banner: {
+            sizes: sizes,
+            bannerSizes: bannerSizes
           }
         }
-      },
-      mediaTypes: {
-        banner: {
-          sizes: bidItem.sizes && bidItem.sizes.length > 0 ? bidItem.sizes : [[300, 250]]
-        }
-      }
-    }));
+      };
+    });
 
     const payload = {
       organizationId: orgId,
+      hasRtd: 0,
       secure: 1,
       site: {
         domain: siteDomain,
@@ -207,17 +216,33 @@ export async function queryPartnerDemand(
       device: {
         userAgent: requestBody.device?.ua || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
         language: requestBody.device?.language || 'en',
-        js: 1
+        js: 1,
+        geo: {}
       },
       pageviewId: `pv_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       adUnits: adUnits,
-      gdprConsent: requestBody.consent?.gdprApplies !== undefined ? {
-        consentRequired: requestBody.consent.gdprApplies ? 1 : 0,
-        consentString: requestBody.consent.consentString || ''
-      } : undefined,
-      uspConsent: requestBody.consent?.uspConsent ? {
-        uspConsent: requestBody.consent.uspConsent
-      } : undefined
+      data: {
+        session: {
+          new: true,
+          rnd: Math.random()
+        }
+      },
+      regs: {
+        gdpr: requestBody.consent?.gdprApplies !== undefined ? {
+          consentRequired: requestBody.consent.gdprApplies ? 1 : 0,
+          consentString: requestBody.consent.consentString || ''
+        } : {},
+        ccpa: requestBody.consent?.uspConsent ? {
+          uspConsent: requestBody.consent.uspConsent
+        } : {},
+        coppa: { required: 0 }
+      },
+      user: {
+        eids: (requestBody as any).user?.eids || (requestBody as any).eids || []
+      },
+      schain: (requestBody as any).source?.ext?.schain || (requestBody as any).schain || undefined,
+      prebidVersion: '9.0.0',
+      usIfr: true
     };
 
     try {
