@@ -24,7 +24,7 @@ export const demandPartners: DemandPartnerConfig[] = [
     enabled: process.env.ENABLE_ADAGIO !== 'false',
     endpointUrl: process.env.ADAGIO_ENDPOINT_URL || 'https://mp.4dex.io/prebid',
     userSyncUrl: 'https://mp.4dex.io/usersync',
-    timeoutMs: Number(process.env.ADAGIO_TIMEOUT_MS) || 120,
+    timeoutMs: Number(process.env.ADAGIO_TIMEOUT_MS) || 800,
     credentials: {
       organizationId: process.env.ADAGIO_ORG_ID || '1687'
     }
