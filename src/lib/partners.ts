@@ -165,8 +165,10 @@ export async function queryPartnerDemand(
       ? domainParts.slice(1).join('.')
       : (rawDomain || 'kunstlichewelt.de');
 
+    // Adagio matches on internal site identifier formatted as hyphenated domain (e.g. wereviewaitools-com)
+    const adagioSiteKey = siteDomain.replace(/\./g, '-');
     const sitePage = requestBody.page || `https://${siteDomain}/`;
-    const endpointWithQuery = `${partner.endpointUrl}?orgid=${encodeURIComponent(orgId)}&site=${encodeURIComponent(siteDomain)}`;
+    const endpointWithQuery = `${partner.endpointUrl}?orgid=${encodeURIComponent(orgId)}&site=${encodeURIComponent(adagioSiteKey)}`;
 
     const adUnits = requestBody.bids.map((bidItem) => ({
       adUnitCode: bidItem.placementId,
@@ -174,7 +176,7 @@ export async function queryPartnerDemand(
       bidder: 'adagio',
       params: {
         organizationId: orgId,
-        site: siteDomain,
+        site: adagioSiteKey,
         placement: bidItem.placementId,
         ...(bidItem.params || {})
       },
