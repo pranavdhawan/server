@@ -1,22 +1,33 @@
 import { PrebidBidRequestBody, MonetiseUpBidResult } from './types';
 import { serverConfig } from './config';
 import { demandPartners, queryPartnerDemand } from './partners';
+import { generatePrebidReviewCreative } from './testCreative';
 
 /**
  * MonetiseUp Multi-Partner Auction Engine
  * Dispatches requests to all enabled demand partners in parallel (Adagio, Pubmatic, etc.),
- * picks the highest CPM winner, and applies MonetiseUp take-rate margin.
+ * picks the highest CPM winner, applies MonetiseUp take-rate margin,
+ * and handles official test placements for Banner and Video.
  */
 export async function executeAuction(
   requestBody: PrebidBidRequestBody
 ): Promise<MonetiseUpBidResult[]> {
   const winningBids: MonetiseUpBidResult[] = [];
-  const liveBidsToQuery: typeof requestBody.bids = requestBody.bids || [];
+  const allBids = requestBody.bids || [];
 
-  // If there are live production ad units, query all active partners in parallel
-  if (liveBidsToQuery.length > 0) {
+  // Separate test bids from live demand bids
+  const testBids = allBids.filter(b => b.placementId && b.placementId.startsWith('test-'));
+  const liveBids = allBids.filter(b => !b.placementId || !b.placementId.startsWith('test-'));
+
+  // 1. Process designated test placements immediately (for Prebid reviews & testing)
+  for (const testBid of testBids) {
+    winningBids.push(generatePrebidReviewCreative(testBid, 2.50));
+  }
+
+  // 2. Query live demand partners in parallel for production slots
+  if (liveBids.length > 0) {
     const activePartners = demandPartners.filter((p) => p.enabled);
-    const subRequest = { ...requestBody, bids: liveBidsToQuery };
+    const subRequest = { ...requestBody, bids: liveBids };
 
     const partnerPromises = activePartners.map((partner) =>
       queryPartnerDemand(partner, subRequest)

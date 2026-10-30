@@ -2,12 +2,63 @@ import { PrebidBidRequestItem, MonetiseUpBidResult } from './types';
 
 /**
  * Generates an official test creative for Prebid.org compliance reviews.
- * Triggered exclusively when placementId is a designated test ID (e.g. test-placement-123).
+ * Supports both Banner and Video (VAST XML / VAST URL) formats.
+ * Triggered when placementId is a designated test ID (e.g. test-placement-123, test-video-placement)
+ * or when in test simulation mode.
  */
 export function generatePrebidReviewCreative(
   item: PrebidBidRequestItem,
-  cpm: number = 1.75
+  cpm: number = 2.50
 ): MonetiseUpBidResult {
+  const isVideo = !!(item.video && !item.banner);
+
+  if (isVideo) {
+    const playerSize = item.video?.playerSize?.[0] || [640, 480];
+    const [width, height] = playerSize;
+    const creativeId = `monetiseup_video_test_${width}x${height}_${Date.now()}`;
+
+    // Standard IAB compliant VAST 3.0 response with MonetiseUp sample video creative
+    const vastXml = `
+<VAST version="3.0">
+  <Ad id="${creativeId}">
+    <InLine>
+      <AdSystem version="1.0">MonetiseUp</AdSystem>
+      <AdTitle>MonetiseUp Test Video Creative</AdTitle>
+      <Description>Official MonetiseUp Prebid Test Video</Description>
+      <Pricing model="cpm" currency="USD">${cpm.toFixed(2)}</Pricing>
+      <Creatives>
+        <Creative id="cr_${creativeId}" sequence="1">
+          <Linear>
+            <Duration>00:00:15</Duration>
+            <MediaFiles>
+              <MediaFile delivery="progressive" type="video/mp4" width="${width}" height="${height}" bitrate="800">
+                <![CDATA[https://v.monetiseup.com/creatives/test_video_15s.mp4]]>
+              </MediaFile>
+            </MediaFiles>
+          </Linear>
+        </Creative>
+      </Creatives>
+    </InLine>
+  </Ad>
+</VAST>
+    `.trim();
+
+    return {
+      bidId: item.bidId,
+      cpm: cpm,
+      currency: 'USD',
+      width: width,
+      height: height,
+      creativeId: creativeId,
+      mediaType: 'video',
+      vastXml: vastXml,
+      vastUrl: `https://bid5up.monetiseup.com/api/vast?id=${creativeId}`,
+      adomain: ['monetiseup.com'],
+      demandSource: 'MonetiseUp'
+    };
+  }
+
+  // Banner creative
   const [width, height] = (item.sizes && item.sizes.length > 0)
     ? item.sizes[0]
     : [300, 250];
@@ -81,6 +132,7 @@ export function generatePrebidReviewCreative(
     width: width,
     height: height,
     creativeId: creativeId,
+    mediaType: 'banner',
     adHtml: adHtml,
     adomain: ['monetiseup.com'],
     demandSource: 'MonetiseUp'

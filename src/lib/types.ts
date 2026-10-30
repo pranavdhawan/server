@@ -1,9 +1,29 @@
 export interface PrebidBidRequestItem {
   bidId: string;
   placementId: string;
-  sizes: [number, number][];
+  sizes?: [number, number][];
+  banner?: {
+    sizes?: [number, number][];
+  };
+  video?: {
+    playerSize?: [number, number][];
+    context?: string;
+    mimes?: string[];
+    protocols?: number[];
+    minduration?: number;
+    maxduration?: number;
+    startdelay?: number;
+    playbackmethod?: number[];
+    api?: number[];
+    skip?: number;
+    skipafter?: number;
+    placement?: number;
+    plcmt?: number;
+    linearity?: number;
+  };
   floor?: number;
   floorCurrency?: string;
+  gpid?: string;
   params?: Record<string, any>;
 }
 
@@ -12,6 +32,7 @@ export interface PrebidBidRequestBody {
   page?: string;
   domain?: string;
   referer?: string;
+  site?: Record<string, any>;
   device?: {
     ua?: string;
     ip?: string;
@@ -20,6 +41,10 @@ export interface PrebidBidRequestBody {
     dnt?: number;
     language?: string;
   };
+  eids?: any[];
+  schain?: any;
+  bcat?: string[];
+  badv?: string[];
   consent?: {
     gdprApplies?: boolean;
     consentString?: string;
@@ -37,7 +62,10 @@ export interface MonetiseUpBidResult {
   width: number;
   height: number;
   creativeId: string;
-  adHtml: string;
+  mediaType?: 'banner' | 'video';
+  adHtml?: string;
+  vastUrl?: string;
+  vastXml?: string;
   adomain: string[];
   demandSource: string;
   dealId?: string;
