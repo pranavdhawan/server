@@ -39,17 +39,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json([], { status: 200, headers: corsHeaders });
     }
 
+    const clientIp = request.headers.get('x-forwarded-for') || request.ip || 'unknown';
+    const clientUa = request.headers.get('user-agent') || 'unknown';
+
     // Attach request metadata if missing
     if (!body.device) {
       body.device = {
-        ua: request.headers.get('user-agent') || undefined,
-        ip: request.headers.get('x-forwarded-for') || request.ip || undefined,
+        ua: clientUa,
+        ip: clientIp,
         language: request.headers.get('accept-language')?.split(',')[0] || undefined
       };
+    } else {
+      if (!body.device.ip) body.device.ip = clientIp;
+      if (!body.device.ua) body.device.ua = clientUa;
     }
+
+    const domain = body.domain || body.site?.domain || 'unknown';
+    const placementList = (body.bids || []).map(b => b.placementId).join(', ');
+    console.log(`[Auction Inbound] Domain: "${domain}" | Placements: [${placementList}] | Client IP: ${clientIp}`);
 
     // Run the multi-DSP auction
     const winningBids = await executeAuction(body);
+
+    console.log(`[Auction Outbound] Returning ${winningBids.length} winning bid(s) to Prebid.`);
 
     return NextResponse.json(winningBids, {
       status: 200,

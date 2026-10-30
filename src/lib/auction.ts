@@ -36,13 +36,21 @@ export async function executeAuction(
     const results = await Promise.allSettled(partnerPromises);
     const bidsByImpId: Map<string, MonetiseUpBidResult[]> = new Map();
 
-    for (const res of results) {
-      if (res.status === 'fulfilled' && Array.isArray(res.value)) {
-        for (const bid of res.value) {
-          const list = bidsByImpId.get(bid.bidId) || [];
-          list.push(bid);
-          bidsByImpId.set(bid.bidId, list);
+    for (let i = 0; i < results.length; i++) {
+      const res = results[i];
+      const partner = activePartners[i];
+      if (res.status === 'fulfilled') {
+        const count = Array.isArray(res.value) ? res.value.length : 0;
+        console.log(`[Partner Result] ${partner.name}: ${count} bid(s) returned`);
+        if (Array.isArray(res.value)) {
+          for (const bid of res.value) {
+            const list = bidsByImpId.get(bid.bidId) || [];
+            list.push(bid);
+            bidsByImpId.set(bid.bidId, list);
+          }
         }
+      } else {
+        console.error(`[Partner Result] ${partner.name} rejected:`, res.reason);
       }
     }
 
