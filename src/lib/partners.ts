@@ -24,7 +24,7 @@ export const demandPartners: DemandPartnerConfig[] = [
     enabled: process.env.ENABLE_ADAGIO !== 'false',
     endpointUrl: process.env.ADAGIO_ENDPOINT_URL || 'https://mp.4dex.io/prebid',
     userSyncUrl: 'https://mp.4dex.io/usersync',
-    timeoutMs: Number(process.env.ADAGIO_TIMEOUT_MS) || 800,
+    timeoutMs: Number(process.env.ADAGIO_TIMEOUT_MS) || 1200,
     credentials: {
       organizationId: process.env.ADAGIO_ORG_ID || '1687'
     }
@@ -157,7 +157,14 @@ export async function queryPartnerDemand(
   // Dedicated Adagio native 4dex protocol
   if (partner.id === 'adagio') {
     const orgId = partner.credentials.organizationId || '1687';
-    const siteDomain = requestBody.domain || 'kunstlichewelt.de';
+
+    // Generic root domain extractor: strips dynamic staging/preview numeric subdomains (e.g. 2182889.example.com -> example.com)
+    const rawDomain = requestBody.domain || requestBody.site?.domain || '';
+    const domainParts = rawDomain.split('.');
+    const siteDomain = (domainParts.length > 2 && /^\d+$/.test(domainParts[0]))
+      ? domainParts.slice(1).join('.')
+      : (rawDomain || 'kunstlichewelt.de');
+
     const sitePage = requestBody.page || `https://${siteDomain}/`;
     const endpointWithQuery = `${partner.endpointUrl}?orgid=${encodeURIComponent(orgId)}&site=${encodeURIComponent(siteDomain)}`;
 
