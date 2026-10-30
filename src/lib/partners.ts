@@ -229,9 +229,22 @@ export async function queryPartnerDemand(
 
       clearTimeout(timeoutId);
 
-      if (!response.ok || response.status === 204) return [];
+      const errHeader = response.headers.get('x-err') || '';
+      console.log(`[Adagio Upstream] Status: ${response.status} | Site: ${siteDomain} | Org: ${orgId}${errHeader ? ` | x-err: ${errHeader}` : ''}`);
+
+      if (!response.ok || response.status === 204) {
+        if (response.status === 204) {
+          console.log(`[Adagio Upstream] 204 No Content (No active DSP bids for domain: ${siteDomain})`);
+        } else {
+          console.error(`[Adagio Upstream] HTTP ${response.status} Error:`, await response.text().catch(() => ''));
+        }
+        return [];
+      }
+
       const data = await response.json();
       const rawBids = data.bids || data.seatbid?.[0]?.bid || [];
+      console.log(`[Adagio Upstream] Received ${rawBids.length} raw bid(s) from Adagio.`);
+
       if (!Array.isArray(rawBids) || rawBids.length === 0) return [];
 
       const results: MonetiseUpBidResult[] = [];
@@ -253,7 +266,12 @@ export async function queryPartnerDemand(
         });
       }
       return results;
-    } catch {
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        console.warn(`[Adagio Upstream] Request timed out after ${partner.timeoutMs}ms`);
+      } else {
+        console.error('[Adagio Upstream] Fetch failed:', err?.message || err);
+      }
       return [];
     }
   }
