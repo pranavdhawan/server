@@ -207,9 +207,22 @@ export async function queryPartnerDemand(
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), partner.timeoutMs);
 
+      const clientIp = requestBody.device?.ip || '';
+      const clientUa = requestBody.device?.ua || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)';
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': clientUa
+      };
+      if (clientIp) {
+        headers['X-Forwarded-For'] = clientIp;
+        headers['X-Real-IP'] = clientIp;
+      }
+
       const response = await fetch(endpointWithQuery, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        headers: headers,
         body: JSON.stringify(payload),
         signal: controller.signal
       });
